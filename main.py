@@ -4,6 +4,8 @@ from CusomUpdater import MyUpdater
 import CustomFilters as Filters
 import ErrorHandler
 
+# temp/test imports
+from telegram.ext import CommandHandler
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -27,11 +29,19 @@ def hello(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Hi there!")
 
+@updater.make_msg(fltr=Filters.help_cmd)
+def help(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='help response')
 
 @updater.make_msg(fltr=Filters.any_text_not_a_command)
 def echo(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text=update.message.text)
+    if update.effective_chat['type'] == 'channel':
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=update.channel_post.text)
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=update.effective_message.text)
 
 
 @updater.make_msg(fltr=Filters.any_command)
