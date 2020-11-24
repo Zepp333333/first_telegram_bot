@@ -20,14 +20,12 @@ updater.dispatcher.add_error_handler(ErrorHandler.error)
 
 @updater.make_command
 def start(update, context):
-    print(update.effective_chat.id)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="I'm a bot, please talk to me!")
 
 
 @updater.make_command
 def hello(update, context):
-    print(update)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Hi there!")
 
@@ -38,7 +36,6 @@ def help(update, context):
 
 @updater.make_msg(fltr=Filters.any_text_not_a_command)
 def echo(update, context):
-    print(update.effective_chat['type'])
     if update.effective_chat['type'] == 'channel':
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=update.channel_post.text)
@@ -47,15 +44,8 @@ def echo(update, context):
                                  text=update.effective_message.text)
 
 
-
-def hlp(update, context):
-    update.message.reply_text('help response')
-
-updater.dispatcher.add_handler(CommandHandler("help", hlp))
-
 @updater.make_msg(fltr=Filters.any_command)
 def unknown(update, context):
-    print(update)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Sorry. I didn't understand the command.")
 
