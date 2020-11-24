@@ -16,9 +16,9 @@ def start(update, context):
                              text="I'm a bot, please talk to me!")
 
 
-# def echo(update, context):
-#     context.bot.send_message(chat_id=update.effective_chat.id,
-#                              text=update.message.text)
+def echo(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=update.message.text)
 
 
 def caps(update, context):
@@ -75,12 +75,12 @@ if __name__ == '__main__':
     unknown_handler = MessageHandler(Filters.command, unknown)
 
     dispatcher.add_handler(start_handler)
-#    dispatcher.add_handler(echo_handler)
+    dispatcher.add_handler(echo_handler)
     dispatcher.add_handler(caps_handler)
     dispatcher.add_handler(CommandHandler('put', put))
     dispatcher.add_handler(CommandHandler('get', get))
     # Unknown handler should always be last
-    dispatcher.add_handler(unknown_handler)
+#    dispatcher.add_handler(unknown_handler)
 
     updater.start_polling()
     # job_minute = j.run_repeating(callback_minute, interval=60, first=1)
