@@ -2,6 +2,10 @@ from uuid import uuid4
 import telegram.ext
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
+from data import config
+
+
+ADMINS = config.admins
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -12,9 +16,9 @@ def start(update, context):
                              text="I'm a bot, please talk to me!")
 
 
-def echo(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text=update.message.text)
+# def echo(update, context):
+#     context.bot.send_message(chat_id=update.effective_chat.id,
+#                              text=update.message.text)
 
 
 def caps(update, context):
@@ -45,7 +49,6 @@ def put(update, context):
     update.message.reply_text(key)
 
 
-
 def get(update, context):
     """Usage: /get uuid"""
     # Separate ID from command
@@ -57,10 +60,12 @@ def get(update, context):
 
 
 if __name__ == '__main__':
-    with open('TOKEN.txt', 'r') as f:
-        TOKEN = f.read()
+    # with open('TOKEN.txt', 'r') as f:
+    #     TOKEN = f.read()
 
-    updater = Updater(token=TOKEN, use_context=True)
+    # Getting configuration:
+
+    updater = Updater(token=config.BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     # j = updater.job_queue
 
@@ -70,13 +75,12 @@ if __name__ == '__main__':
     unknown_handler = MessageHandler(Filters.command, unknown)
 
     dispatcher.add_handler(start_handler)
-    dispatcher.add_handler(echo_handler)
+#    dispatcher.add_handler(echo_handler)
     dispatcher.add_handler(caps_handler)
     dispatcher.add_handler(CommandHandler('put', put))
     dispatcher.add_handler(CommandHandler('get', get))
     # Unknown handler should always be last
     dispatcher.add_handler(unknown_handler)
-
 
     updater.start_polling()
     # job_minute = j.run_repeating(callback_minute, interval=60, first=1)
