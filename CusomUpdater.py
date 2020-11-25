@@ -1,4 +1,4 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler
 
 
 # class MyUpdater(Updater):
@@ -24,4 +24,11 @@ class MyUpdater(Updater):
             print(f"[HANDLER] Add '{callback.__name__}' as a MessageHandler")
             return handler
         return decorator_f
+
+    def make_button(self, callback):
+        handler = CallbackQueryHandler(callback=callback)
+        self.dispatcher.add_handler(handler)
+        print(f"[HANDLER] Add '{callback.__name__}' as a Button Handler")
+        return handler
+
 

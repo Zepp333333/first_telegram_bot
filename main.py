@@ -1,8 +1,13 @@
-from data import config
 import logging
+
+from telegram import Update
+from telegram.ext import CallbackContext
+
+from data import config
 from CusomUpdater import MyUpdater
 import CustomFilters as Filters
 import ErrorHandler
+import Keyboards
 
 # temp/test imports
 from telegram.ext import CommandHandler
@@ -19,23 +24,37 @@ updater.dispatcher.add_error_handler(ErrorHandler.error)
 
 
 @updater.make_command
-def start(update, context):
+def start(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="I'm a bot, please talk to me!")
 
 
 @updater.make_command
-def hello(update, context):
+def hello(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Hi there!")
 
+
 @updater.make_msg(fltr=Filters.help_cmd)
-def help(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text='help response')
+def help(update: Update, context: CallbackContext):
+    update.message.reply_text('Please choose:', reply_markup=Keyboards.reply_inline_test_markup)
+
+    # context.bot.send_message(chat_id=update.effective_chat.id,
+    #                          text='Custom Keyboard Test',
+    #                          reply_markup=Keyboards.reply_markup)
+    # context.bot.send_message(chat_id=update.effective_chat.id,
+    #                              text='help response')
+
+
+@updater.make_button
+def button(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text(text=f"Selected option: {query.data}", reply_markup=Keyboards.reply_inline_test_markup)
+
 
 @updater.make_msg(fltr=Filters.any_text_not_a_command)
-def echo(update, context):
+def echo(update: Update, context: CallbackContext):
     if update.effective_chat['type'] == 'channel':
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=update.channel_post.text)
@@ -45,7 +64,7 @@ def echo(update, context):
 
 
 @updater.make_msg(fltr=Filters.any_command)
-def unknown(update, context):
+def unknown(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Sorry. I didn't understand the command.")
 
