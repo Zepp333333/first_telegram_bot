@@ -26,6 +26,14 @@ class MyUpdater(Updater):
             return handler
         return decorator_f
 
+    def make_command_filter(self, fltr):
+        def decorator_f(callback):
+            handler = CommandHandler(command=callback.__name__, callback=callback, filters=fltr)
+            self.dispatcher.add_handler(handler)
+            print(f"[HANDLER] Add '{callback.__name__}' as a CommandHandler with Filter")
+            return handler
+        return decorator_f
+
     def make_button(self, callback):
         handler = CallbackQueryHandler(callback=callback)
         self.dispatcher.add_handler(handler)
