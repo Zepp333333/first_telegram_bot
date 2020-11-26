@@ -1,4 +1,5 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler
+from telegram import Update
 
 
 # class MyUpdater(Updater):
@@ -24,4 +25,19 @@ class MyUpdater(Updater):
             print(f"[HANDLER] Add '{callback.__name__}' as a MessageHandler")
             return handler
         return decorator_f
+
+    def make_command_filter(self, fltr):
+        def decorator_f(callback):
+            handler = CommandHandler(command=callback.__name__, callback=callback, filters=fltr)
+            self.dispatcher.add_handler(handler)
+            print(f"[HANDLER] Add '{callback.__name__}' as a CommandHandler with Filter")
+            return handler
+        return decorator_f
+
+    def make_button(self, callback):
+        handler = CallbackQueryHandler(callback=callback)
+        self.dispatcher.add_handler(handler)
+        print(f"[HANDLER] Add '{callback.__name__}' as a Button Handler")
+        return handler
+
 

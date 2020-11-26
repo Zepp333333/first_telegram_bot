@@ -59,6 +59,20 @@ def get(update, context):
     update.message.reply_text(value)
 
 
+def handler_maker(update, context, command, callback):
+    if command == 'command':
+        callback =
+        hander = updater.dispatcher.add_handler(CommandHandler('test-name'), callback=callback)
+
+def test(update, context):
+    callback = '''text_caps = ' '.join(context.args).upper()
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=text_caps)'''
+    handler_maker(update, context, 'command', callback)
+
+
+
+
 if __name__ == '__main__':
     # with open('TOKEN.txt', 'r') as f:
     #     TOKEN = f.read()
