@@ -1,4 +1,5 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler
+from telegram import Update
 
 
 # class MyUpdater(Updater):
