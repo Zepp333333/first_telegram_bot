@@ -135,3 +135,5 @@ dmypy.json
 .idea/
 
 
+/conversationbot.py
+/conversationbot2.py
