@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# pylint: disable=W0613, C0116
+# type: ignore[union-attr]
+
 import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -121,7 +126,7 @@ def select_event(update: Update, context: CallbackContext):
 
     text = (
         'Ок, ищем команду.\n'
-        'Ты ' + translation_dict[(context.user_data['role'])] + '\n' 
+        'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
         'В какой гонке ты хочешь участовоать?'
     )
     buttons = [
