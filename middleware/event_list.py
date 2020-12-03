@@ -1,9 +1,9 @@
 from lxml import html
-import requests
+from requests import get, exceptions
 from bs4.element import Tag
 from bs4 import BeautifulSoup
-import re
-import uuid
+from re import search
+from uuid import uuid4
 from datetime import datetime
 
 
@@ -12,18 +12,16 @@ class TriathlonEvent(object):
     Class representing triathlon event including it's Title,
     URL, Image, Distance, Location etc
     """
-    def __init__(self, url: str = None, title: str = None, date: str = None, location: str = None,
-                 race_distance: dict = None, image_url: str = None):
-        """
-        Instantiates a TriathlonEvent. All params are optional and set to None by default.
-        """
-        self.event_id = uuid.uuid4()
-        self.url = url
-        self.title = title
-        self.date = date
-        self.location = location
-        self.race_distance = race_distance
-        self.image_url = image_url
+
+    def __init__(self):
+        self.event_id = uuid4()
+        self.url = None
+        self.title = None
+        self.date = None
+        self.location = None
+        self.race_distance = []
+        self.image_url = None
+        self.date_range = None
 
     def set_properties(self, url: str = None, title: str = None, date: str = None, location: str = None,
                        race_distance: dict = None, image_url: str = None) -> None:
@@ -83,7 +81,7 @@ class IronStarEvent(TriathlonEvent):
             Helper: extracts image url from bs4.Tag scraped from https://iron-star.com/event/
             """
             div_url = event.find('div', {'class': 'image'})['style']
-            return IronStarEvent.base_url + re.search(r'(\/.*)\);', div_url).group(1)
+            return IronStarEvent.base_url + search(r'(\/.*)\);', div_url).group(1)
 
         def extract_race_distance() -> dict:
             """
@@ -93,9 +91,9 @@ class IronStarEvent(TriathlonEvent):
             distances = event.find_all('div', {'class': 'triathlon-item'})
             for d in distances:
                 tag = str(d.contents[0].contents[0])
-                tag = re.search(r'#(.*)\"', tag).group(1)
+                tag = search(r'#(.*)\"', tag).group(1)
                 text = d.text.strip()
-                text = re.search('(\d?(,)?\d*)', text).group(0) + 'km'
+                text = search('(\d?(,)?\d*)', text).group(0) + 'km'
                 event_race_distance[tag] = text
             return event_race_distance
 
@@ -111,37 +109,69 @@ class IronStarEvent(TriathlonEvent):
 
 class EventList(object):
     """
-    todo class doctring
+    Represents a generic collection of TriathlonEvents
     """
+
     def __init__(self):
         self.created = datetime.now()
-        self.event_list_id = uuid.uuid4()
+        self.event_list_id = uuid4()
         self.event_list: 'list[TriathlonEvent]' = []
-        self.filters: 'list[dict]' = []
+        self.filters: 'list[dict]' = {}
 
     def populate_event_list(self):
         pass
 
-    def page_print(self,  page_size: int) -> 'list[list[str]]':
+    def page_print(self, page_size: int, lst: 'list[TriathlonEvent]' = None) -> 'list[list[str]]':
         """
         Returns paged list of TriatlonEvent.__str__'s.
+        :param lst: Optional = 'list[TriathlonEvent]' to page_print, if not provided - use list from self
+        This parm exist so that function can print arbitrary list in order to print filtered list
         :param page_size: int
         :return: list[list[str]]
         """
-        event_strings = [e.__str__() for e in self.event_list]
+        if not lst:
+            lst = self.event_list
+        event_strings = [e.__str__() for e in lst]
         paged_list = [event_strings[p:p + page_size] for p in range(0, len(event_strings), page_size)]
         return paged_list
+
+    def filtered_page_print(self, page_size: int) -> 'list[list[str]]':
+        return self.page_print(page_size, self.apply_filters())
+
+    def get_filters(self) -> None:
+        return self.filters
+
+    def update_filters(self, filter_: dict) -> None:
+        for k, v in filter_.items():
+            # assert k in TriathlonEvent.__dict__.keys() - todo doesn't work - need another solutoin
+            self.filters[k] = v
+
+    def apply_filters(self) -> 'list[TriathlonEvent]':
+        """
+        returns filtered (self.filters) list of TriathlonEvents
+        todo: add date-range filtering
+        """
+        def helper(x: TriathlonEvent) -> bool:
+            result = True
+            for k, v in self.filters.items():
+                if k in x.__dict__.keys() and not (x.__getattribute__(k).lower() == v.lower()):
+                    result = False
+            return result
+
+        filtered = list(filter(helper, self.event_list))
+        return filtered
 
 
 class IronStarEventList(EventList):
     """
-    todo class doctring
+    Represents a collecion of IronStar event objects
+    Inherits from EventList
     """
     base_url = 'https://iron-star.com'
     event_list_url = 'https://iron-star.com/event/'
 
     def populate_event_list(self) -> None:
-        # todo -> pull this up to base class
+        # todo -> consider pull-ing this up to base class
         """
         Creates collection of relevant TriathlonEvent objects and populates their properties
         based on web-scraped information
@@ -159,9 +189,9 @@ class IronStarEventList(EventList):
         :return: list of events as bs4.element.Tag(s)
         """
         try:
-            response = requests.get(self.event_list_url)
+            response = get(self.event_list_url)
             response.raise_for_status()
-        except requests.exceptions.HTTPError as ex:
+        except exceptions.HTTPError as ex:
             print(ex.response.text)
 
         soup = BeautifulSoup(response.content, 'lxml')
@@ -171,3 +201,12 @@ class IronStarEventList(EventList):
             event_bs4_list.append(tag)
         return event_bs4_list
 
+
+# todo - remove
+# test code
+# import pickle
+i_list = IronStarEventList()
+i_list.populate_event_list()
+i_list.update_filters({'location': 'Сочи'})
+# save_object_to_file(i_list, 'dump.p')
+# irr = load_object_from_file(IronStarEventList, 'dump.p')
