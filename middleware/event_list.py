@@ -98,7 +98,7 @@ class EventList(object):
 
         for event in scraper.get_scrape_data():
             e = TriathlonEvent()
-            e.populate_event_data(scraper.parse(event))
+            e.populate_event_data(scraper.parse_single_tag(event))
             self.event_list.append(e)
 
     def page_print(self, page_size: int, lst: 'list[TriathlonEvent]' = None) -> 'list[list[str]]':

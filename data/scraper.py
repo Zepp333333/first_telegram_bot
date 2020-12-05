@@ -40,7 +40,7 @@ class IronStarScraper(object):
             event_bs4_list.append(tag)
         self.scrape_data = event_bs4_list
 
-    def parse(self, tag) -> dict:
+    def parse_single_tag(self, tag) -> dict:
         for key in self.pasrsing_keys:
             fn = 'extract_' + key
             self.parsed_data[key] = self.__getattribute__(fn)(tag)
