@@ -16,6 +16,7 @@ from cusom_updater import MyUpdater
 import filters as filters
 import error_handler
 import keyboards
+from data import data_wrapper
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -250,8 +251,8 @@ def main():
 
 
     dispatcher.add_handler(main_conv_handler)
-    updater.start_polling()
-    updater.idle()
+    # updater.start_polling()
+    # updater.idle()
 
 
 '''

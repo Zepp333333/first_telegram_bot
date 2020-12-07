@@ -10,7 +10,7 @@ class IronStarScraper(object):
         self.url = url
         self.scrape_data: 'list[Tag]' = []
         self.parsed_data: dict = {}
-        self.pasrsing_keys: list = [
+        self.pasrse_keys: list = [
             'url',
             'title',
             'date',
@@ -41,7 +41,7 @@ class IronStarScraper(object):
         self.scrape_data = event_bs4_list
 
     def parse_single_tag(self, tag) -> dict:
-        for key in self.pasrsing_keys:
+        for key in self.pasrse_keys:
             fn = 'extract_' + key
             self.parsed_data[key] = self.__getattribute__(fn)(tag)
         return self.parsed_data

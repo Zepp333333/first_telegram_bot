@@ -2,6 +2,8 @@ from uuid import uuid4
 import datetime
 from data.scraper import IronStarScraper
 
+AVAILABLE_SCRAPERS = [IronStarScraper]
+
 
 class TriathlonEvent(object):
     """
@@ -63,14 +65,6 @@ class TriathlonEvent(object):
         )
 
 
-class IronStarEvent(TriathlonEvent):
-    pass
-
-
-class IronManEvent(TriathlonEvent):
-    pass
-
-
 class EventList(object):
     """
     Represents a generic collection of TriathlonEvents
@@ -82,24 +76,20 @@ class EventList(object):
         self.event_list: 'list[TriathlonEvent]' = []
         self.filters: dict = {}
 
-    def populate_event_list(self, event_cls) -> None:
+    def populate_event_list(self) -> None:
         """
-        Creates collection of relevant TriathlonEvent objects and populates their properties
+        Creates collection of TriathlonEvent objects and populates their properties
         based on web-scraped information
         """
         if self.event_list:  # we don't re-write existing list of events in IronStarEventList object
             return None
-        # check which event class we use
-        if event_cls == IronStarEvent:
-            scraper = IronStarScraper()
+        for avail_scraper in AVAILABLE_SCRAPERS:
+            scraper = avail_scraper()
             scraper.scrape()
-        elif event_cls == IronManEvent:
-            raise Exception('Not Implemented: IronManEvent')  # todo : Implement
-
-        for event in scraper.get_scrape_data():
-            e = TriathlonEvent()
-            e.populate_event_data(scraper.parse_single_tag(event))
-            self.event_list.append(e)
+            for event in scraper.get_scrape_data():
+                e = TriathlonEvent()
+                e.populate_event_data(scraper.parse_single_tag(event))
+                self.event_list.append(e)
 
     def page_print(self, page_size: int, lst: 'list[TriathlonEvent]' = None) -> 'list[list[str]]':
         """
@@ -142,12 +132,3 @@ class EventList(object):
         filtered = list(filter(helper, self.event_list))
         return filtered
 
-
-# todo - remove
-# test code
-# import pickle
-# el = EventList()
-# el.populate_event_list(IronStarEvent)
-# el.update_filters({'location': 'Сочи'})
-# save_object_to_file(i_list, 'dump.p')
-# irr = load_object_from_file(IronStarEventList, 'dump.p')
