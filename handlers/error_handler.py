@@ -2,7 +2,7 @@ from telegram import ParseMode
 from telegram.utils.helpers import mention_html
 import sys
 import traceback
-from data.config import admins
+from data.config import ADMINS
 
 
 
@@ -10,7 +10,7 @@ from data.config import admins
 # payload in the respective if clause
 def error(update, context):
     # add all the dev user_ids in this list. You can also add ids of channels or groups.
-    devs = admins
+    devs = ADMINS
     # we want to notify the user of this problem. This will always work, but not notify users if the update is an
     # callback or inline query, or a poll update. In case you want this, keep in mind that sending the message
     # could fail
