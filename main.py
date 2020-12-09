@@ -3,31 +3,35 @@
 # pylint: disable=W0613, C0116
 # type: ignore[union-attr]
 
-from telegram.ext import CallbackContext, Updater
+from telegram.ext import CallbackContext, Updater, InlineQueryHandler
 from telegram.ext import ConversationHandler, MessageHandler, CommandHandler, CallbackQueryHandler
+from telegram import Update
 
 from data import config
 from handlers.conv import *
 from handlers import error_handler
-import keyboards
+from cusom_updater import MyUpdater
 from data import data_wrapper
 
 
 def main():
     # Setting-up bot
-    updater = Updater(token=config.BOT_TOKEN, use_context=True)
+    updater = MyUpdater(token=config.BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_error_handler(error_handler.error)
+
+    # instantiating and populating the EventList
+    event_list = data_wrapper.get_event_list()
 
     find_team_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(self_role, pattern='^' + str(IN_SEARCH_FOR_TEAM) + '$')],
         states={
-            VIEW_OPTIONS: [CallbackQueryHandler(select_event,
+            VIEW_OPTIONS: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
                                                 pattern=
                                                 '^' + str(SWIMMER) + '$|^'
                                                 + str(BIKER) + '$|^'
                                                 + str(RUNNER) + '$')],
-            GOT_SELF_ROLE: [CallbackQueryHandler(select_event,
+            GOT_SELF_ROLE: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
                                                  pattern=
                                                  '^' + str(SWIMMER) + '$|^'
                                                  + str(BIKER) + '$|^'
@@ -70,7 +74,7 @@ def main():
 
     dispatcher.add_handler(main_conv_handler)
     updater.start_polling()
-    updater.idle()
+    # updater.idle()
 
 
 '''

@@ -5,7 +5,7 @@ import logging
 from data import config
 
 
-ADMINS = config.admins
+ADMINS = config.ADMINS
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)

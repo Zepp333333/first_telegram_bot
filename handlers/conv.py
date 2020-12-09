@@ -2,9 +2,12 @@ import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
+from middleware.event_list import EventList
 
 
 # todo : offload all logging into separate module
+from telegram.utils.helpers import escape_markdown
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -103,7 +106,41 @@ def self_role(update: Update, context: CallbackContext):
     return GOT_SELF_ROLE
 
 
-def select_event(update: Update, context: CallbackContext):
+def select_event(update: Update, context: CallbackContext, event_list: EventList):
+    logger.info('User %s got to %s',
+                update.callback_query.from_user.first_name, 'select_event')
+    logger.info('userdata %s', context.user_data)
+
+    context.user_data['role'] = update.callback_query.data
+
+    static_text = (
+        'Ок, ищем команду. '
+        'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
+        'В какой гонке ты хочешь участвовать?'
+        '\n'
+        '\n'
+    )
+
+    # todo: add paging
+    variable_text = '\n'.join(event_list.filtered_page_print(5, 'get_text_with_selector')[0])
+    buttons = [
+        [
+            InlineKeyboardButton(text='Назад', callback_data=str(END)),
+        ]
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.edit_message_text(text=static_text + variable_text,
+                                            reply_markup=keyboard,
+                                            disable_web_page_preview=True)
+    context.user_data['level'] = EVENT_SELECTION
+    print('state = VIEW_OPTIONS ')
+    return VIEW_OPTIONS
+
+
+# todo : remove
+def select_event_old(update: Update, context: CallbackContext):
+
+
     logger.info('User %s got to %s',
                 update.callback_query.from_user.first_name, 'select_event')
     logger.info('userdata %s', context.user_data)
@@ -115,21 +152,22 @@ def select_event(update: Update, context: CallbackContext):
         'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
         'В какой гонке ты хочешь участовоать?'
     )
-    buttons = [
-        [
-            InlineKeyboardButton(text='Гонка 1', callback_data=str(1)),
-            InlineKeyboardButton(text='Гонка 2', callback_data=str(2)),
-            InlineKeyboardButton(text='Гонка 3', callback_data=str(3)),
-        ],
-        [
-            InlineKeyboardButton(text='Назад', callback_data=str(END)),
-        ]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+    # buttons = [
+    #     [
+    #         InlineKeyboardButton(text='Гонка 1', callback_data=str(1)),
+    #         InlineKeyboardButton(text='Гонка 2', callback_data=str(2)),
+    #         InlineKeyboardButton(text='Гонка 3', callback_data=str(3)),
+    #     ],
+    #     [
+    #         InlineKeyboardButton(text='Назад', callback_data=str(END)),
+    #     ]
+    # ]
+    # keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.edit_message_text(text=text)  #, reply_markup=keyboard)
     context.user_data['level'] = EVENT_SELECTION
     print('state = VIEW_OPTIONS ')
     return VIEW_OPTIONS
+
 
 def in_search_for_athlete(update: Update, context: CallbackContext):
     # TODO: STUB
@@ -154,7 +192,6 @@ def go_back(update: Update, context: CallbackContext):
         return GOT_SELF_ROLE
 
 
-
 def stop(update: Update, context: CallbackContext):
     """End Conversation by command."""
     update.message.reply_text('До встречи!')
@@ -176,3 +213,5 @@ def end(update: Update, context: CallbackContext) -> None:
     update.callback_query.edit_message_text(text=text)
     print('state = END')
     return END
+
+
