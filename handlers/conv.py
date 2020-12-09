@@ -3,11 +3,11 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
 from middleware.event_list import EventList
+from keyboards import PagingKeyboard
+
 
 
 # todo : offload all logging into separate module
-from telegram.utils.helpers import escape_markdown
-
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -106,13 +106,36 @@ def self_role(update: Update, context: CallbackContext):
     return GOT_SELF_ROLE
 
 
+
+# todo : remove - not needed
+def paging_event(update: Update, context: CallbackContext, event_list: EventList):
+    logger.info('User %s got to %s',
+                update.message.from_user.first_name, 'select_event')
+    logger.info('userdata %s', context.user_data)
+    static_text = (
+            'Ок, ищем команду. '
+            'Ты '  + '\n'
+                                                                    'В какой гонке ты хочешь участвовать?'
+                                                                    '\n'
+                                                                    '\n'
+    )
+
+    pages = event_list.filtered_page_print(5, print_method='get_text_with_selector')
+    page = pages[0]
+    total_pages = len(pages)
+    keyboard = PagingKeyboard(total_pages)
+    update.message.reply_text(text=static_text + page,
+                              reply_markup=keyboard.make_keyboard_markup(0),
+                              disable_web_page_preview=True)
+    context.user_data['last_paging_query'] = ''
+
+
 def select_event(update: Update, context: CallbackContext, event_list: EventList):
     logger.info('User %s got to %s',
                 update.callback_query.from_user.first_name, 'select_event')
     logger.info('userdata %s', context.user_data)
 
     context.user_data['role'] = update.callback_query.data
-
     static_text = (
         'Ок, ищем команду. '
         'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
@@ -121,51 +144,34 @@ def select_event(update: Update, context: CallbackContext, event_list: EventList
         '\n'
     )
 
-    # todo: add paging
-    variable_text = '\n'.join(event_list.filtered_page_print(5, 'get_text_with_selector')[0])
-    buttons = [
-        [
-            InlineKeyboardButton(text='Назад', callback_data=str(END)),
-        ]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.edit_message_text(text=static_text + variable_text,
-                                            reply_markup=keyboard,
+    pages = event_list.filtered_page_print(5, print_method='get_text_with_selector')
+    page = pages[0]
+    total_pages = len(pages)
+    keyboard = PagingKeyboard(total_pages, keys_below=[InlineKeyboardButton(text='Back', callback_data=str(END))])
+    markup = keyboard.make_keyboard_markup(0)
+    update.callback_query.edit_message_text(text=static_text + page,
+                                            reply_markup=markup,
                                             disable_web_page_preview=True)
+    context.user_data['last_paging_query'] = ''
     context.user_data['level'] = EVENT_SELECTION
     print('state = VIEW_OPTIONS ')
     return VIEW_OPTIONS
 
 
-# todo : remove
-def select_event_old(update: Update, context: CallbackContext):
-
-
-    logger.info('User %s got to %s',
-                update.callback_query.from_user.first_name, 'select_event')
-    logger.info('userdata %s', context.user_data)
-
-    context.user_data['role'] = update.callback_query.data
-
-    text = (
-        'Ок, ищем команду.\n'
-        'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
-        'В какой гонке ты хочешь участовоать?'
-    )
-    # buttons = [
-    #     [
-    #         InlineKeyboardButton(text='Гонка 1', callback_data=str(1)),
-    #         InlineKeyboardButton(text='Гонка 2', callback_data=str(2)),
-    #         InlineKeyboardButton(text='Гонка 3', callback_data=str(3)),
-    #     ],
-    #     [
-    #         InlineKeyboardButton(text='Назад', callback_data=str(END)),
-    #     ]
-    # ]
-    # keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.edit_message_text(text=text)  #, reply_markup=keyboard)
-    context.user_data['level'] = EVENT_SELECTION
-    print('state = VIEW_OPTIONS ')
+def paging_callback(update: Update, context: CallbackContext, event_list: EventList):
+    query = update.callback_query
+    if not query.data == context.user_data['last_paging_query']:
+        query.answer()
+        page_number = int(query.data.split('#')[1])
+        pages = event_list.filtered_page_print(5, print_method='get_text_with_selector')
+        total_pages = len(pages)
+        page = pages[page_number]
+        keyboard = PagingKeyboard(total_pages)
+        markup = keyboard.make_keyboard_markup(page_number)
+        query.edit_message_text(text=page, reply_markup=markup)
+    else:
+        query.answer()
+    context.user_data['last_paging_query'] = query.data
     return VIEW_OPTIONS
 
 

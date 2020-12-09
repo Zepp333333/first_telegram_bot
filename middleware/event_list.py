@@ -82,7 +82,7 @@ class TriathlonEvent():
         return self.get_text() + f'Выбрать эту гонку /race_select_{self.get_short_id()}\n'
 
 
-class EventList():
+class EventList:
     """
     Represents a generic collection of TriathlonEvents
     """
@@ -113,11 +113,36 @@ class EventList():
         if not self.util_check_short_ids_unique():
             raise Exception('Got duplicate short_id\'s in EventList instance after populate_event_list')
 
-    def page_print(self,
-                   page_size: int,
-                   print_method: str = None,
-                   lst: 'list[TriathlonEvent]' = None) \
-            -> 'list[list[str]]':
+    # def get_paged_list(self,
+    #                    page_size: int,
+    #                    print_method: str = None,
+    #                    separator: str = '\n',
+    #                    lst: 'list[TriathlonEvent]' = None) -> 'list[list[str]]':
+    #     """
+    #     Returns paged list of TriathlonEvent.__str__'s.
+    #     :param page_size: int
+    #     :param print_method: one of TriathlonEvent get_text methods. i.e.
+    #             get_text - default,
+    #             get_text_with_url,
+    #             get_text_with_selector
+    #     :param separator: Optional = separator between lines within one page of TriathlonEvents
+    #     :param lst: Optional = 'list[TriathlonEvent]' to get_paged_list, if not provided - use list from self
+    #     This parm exist so that function can print arbitrary list in order to print filtered list
+    #     :return: list[list[str]]
+    #     """
+    #     if not print_method:
+    #         print_method = 'get_text'
+    #     if not lst:
+    #         lst = self.event_list
+    #     event_strings = [e.__getattribute__(print_method)() + separator for e in lst]
+    #     paged_list = [event_strings[p:p + page_size] for p in range(0, len(event_strings), page_size)]
+    #     return paged_list
+
+    def get_paged_list(self,
+                       page_size: int,
+                       print_method: str = None,
+                       separator: str = '\n',
+                       lst: 'list[TriathlonEvent]' = None) -> 'list[str]]':
         """
         Returns paged list of TriathlonEvent.__str__'s.
         :param page_size: int
@@ -125,7 +150,8 @@ class EventList():
                 get_text - default,
                 get_text_with_url,
                 get_text_with_selector
-        :param lst: Optional = 'list[TriathlonEvent]' to page_print, if not provided - use list from self
+        :param separator: Optional = separator between lines within one page of TriathlonEvents
+        :param lst: Optional = 'list[TriathlonEvent]' to get_paged_list, if not provided - use list from self
         This parm exist so that function can print arbitrary list in order to print filtered list
         :return: list[list[str]]
         """
@@ -134,11 +160,14 @@ class EventList():
         if not lst:
             lst = self.event_list
         event_strings = [e.__getattribute__(print_method)() for e in lst]
-        paged_list = [event_strings[p:p + page_size] for p in range(0, len(event_strings), page_size)]
+        paged_list = [separator.join(event_strings[p:p + page_size]) for p in range(0, len(event_strings), page_size)]
         return paged_list
 
-    def filtered_page_print(self, page_size: int, print_method: str = None,) -> 'list[list[str]]':
-        return self.page_print(page_size=page_size, print_method=print_method, lst=self.apply_filters())
+    def filtered_page_print(self, page_size: int, separator: str = '\n', print_method: str = None, ) -> 'list[str]':
+        return self.get_paged_list(page_size=page_size,
+                                   print_method=print_method,
+                                   separator=separator,
+                                   lst=self.apply_filters())
 
     def get_filters(self) -> dict:
         return self.filters
