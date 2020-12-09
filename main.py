@@ -26,11 +26,12 @@ def main():
     find_team_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(self_role, pattern='^' + str(IN_SEARCH_FOR_TEAM) + '$')],
         states={
-            VIEW_OPTIONS: [CallbackQueryHandler(lambda update, context: paging_callback(update, context, event_list),
-                                                pattern='^#\d*$')],
+            VIEW_EVENTS: [CallbackQueryHandler(lambda update, context: paging_callback(update, context, event_list),
+                                               pattern='^#\d*$')],
             GOT_SELF_ROLE: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
                                                  pattern=
-                                                 '^' + str(SWIMMER) + '$|^'
+                                                 '^'
+                                                 + str(SWIMMER) + '$|^'
                                                  + str(BIKER) + '$|^'
                                                  + str(RUNNER) + '$')],
         },
