@@ -22,18 +22,24 @@ def main():
 
     # instantiating and populating the EventList
     event_list = data_wrapper.get_event_list()
+    event_list.update_filters({})
 
     find_team_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(self_role, pattern='^' + str(IN_SEARCH_FOR_TEAM) + '$')],
+        entry_points=[CallbackQueryHandler(set_athlete_role, pattern='^' + str(IN_SEARCH_FOR_TEAM) + '$')],
         states={
+            VIEW_SEARCH_OPTIONS: [CallbackQueryHandler(view_search_options, pattern=
+                                                   '^'
+                                                   + str(SWIMMER) + '$|^'
+                                                   + str(BIKER) + '$|^'
+                                                   + str(RUNNER) + '$')],
             VIEW_EVENTS: [CallbackQueryHandler(lambda update, context: paging_callback(update, context, event_list),
                                                pattern='^#\d*$')],
-            GOT_SELF_ROLE: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
-                                                 pattern=
-                                                 '^'
-                                                 + str(SWIMMER) + '$|^'
-                                                 + str(BIKER) + '$|^'
-                                                 + str(RUNNER) + '$')],
+            EVENT_SELECTION: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
+                                                   pattern=
+                                                   '^'
+                                                   + str(SWIMMER) + '$|^'
+                                                   + str(BIKER) + '$|^'
+                                                   + str(RUNNER) + '$')],
         },
         fallbacks=[
             CallbackQueryHandler(go_back, pattern='^' + str(END) + '$'),
@@ -59,7 +65,7 @@ def main():
     main_conv_handler = ConversationHandler(
         entry_points=[CommandHandler('Start', start)],
         states={
-            GOT_SELF_ROLE: [CallbackQueryHandler(start, pattern='^' + str(END) + '$')],
+            EVENT_SELECTION: [CallbackQueryHandler(start, pattern='^' + str(END) + '$')],
             CHOOSE_ACTION: [find_team_conv, find_athlete_conv],
             # todo show info
             STOPPING: [CommandHandler('start', start)],

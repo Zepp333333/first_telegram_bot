@@ -1,41 +1,109 @@
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.utils import helpers
-
-# test_keyboard = [['top-left', 'top-right'],
-#                  ['bottom-left', 'bottom-right']]
-# reply_markup = ReplyKeyboardMarkup(test_keyboard)
-#
-# test_inline_keyboard = [
-#     [
-#         InlineKeyboardButton("Option 1", callback_data='1'),
-#         InlineKeyboardButton("Option 2", callback_data='2'),
-#     ],
-#     [InlineKeyboardButton("Option 3", callback_data='3')],
-# ]
-#
-# reply_inline_test_markup = InlineKeyboardMarkup(test_inline_keyboard)
-#
-#
-# def make_single_button_kbd(key_name, key_payload):
-#     return InlineKeyboardMarkup.from_button(
-#         InlineKeyboardButton(key_name, key_payload)
-#     )
-#
-# def prepare_pin_message_kbd(bot, destination):
-#     url = helpers.create_deep_linked_url(bot_username=bot.get_me().username, payload=destination)
-#     return make_single_button_kbd('start', url)
-#
-#
-# def keyboard_maker(keys: list):
-#     def recursive_map(f, lst):
-#         return (list(recursive_map(f, x) if isinstance(x, list) else f(x) for x in lst))
-#
-#     result = recursive_map(lambda k: InlineKeyboardButton(k, callback_data=k), keys)
-#     return InlineKeyboardMarkup(result)
-#     # def convert_key_to_markup(k):
-#     #     return InlineKeyboardButton(k, callback_data=key)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
+def make_paging_keyboard(
+        total_pages: int,
+        active_page: int = 0,
+        keys_above: 'list[InlineKeyboardButton]' = [],
+        keys_below: 'list[InlineKeyboardButton]' = []) -> InlineKeyboardMarkup:
+
+    key_values = {i: str(i + 1) for i in range(total_pages)}
+    last_page = total_pages -1
+    print(key_values)
+
+    def set_key_label(key_value: str, label: str = 'inactive') -> str:
+        key_text = {
+            'inactive': f'  {key_value}  ',
+            'active': f'• {key_value} •',
+            'fwd': f'  {key_value} >',
+            'ffwd': f'  {key_value} »',
+            'back': f'< {key_value}  ',
+            'fback': f'« {key_value}  ',
+        }
+        return key_text[label]
+
+    def initialize_keyboard() -> 'list[InlineKeyboardButton]':
+        keyboard_size = 5 if total_pages > 5 else total_pages
+        return [InlineKeyboardButton('') for _ in range(keyboard_size)]
+
+    def make_key(key: int, label: str) -> InlineKeyboardButton:
+        return InlineKeyboardButton(
+            text=set_key_label(key_values[key], label=label),
+            callback_data=f'#{str(key)}'
+        )
+
+    def prepare_simple_keyboard() -> 'list[InlineKeyboardButton]':
+        keyboard = initialize_keyboard()
+        for k in range(total_pages):
+            if k == active_page:
+                label = 'active'
+            else:
+                label = 'inactive'
+            keyboard[k] = make_key(k, label)
+        return keyboard
+
+    def prepare_left_keyboard() -> 'list[InlineKeyboardButton]':
+        keyboard = initialize_keyboard()
+        for k in range(4):
+            if k == active_page:
+                label = 'active'
+            elif k == 3:
+                label = 'fwd'
+            else:
+                label = 'inactive'
+            keyboard[k] = make_key(k, label)
+        keyboard[4] = make_key(last_page, 'ffwd')
+        return keyboard
+
+    def prepare_right_keyboard() -> 'list[InlineKeyboardButton]':
+        keyboard = initialize_keyboard()
+        keyboard[0] = make_key(0, 'fback')
+        page = total_pages - 4
+        for k in range(1, 5):
+            if page == active_page:
+                label = 'active'
+            elif page == total_pages - 4:
+                label = 'back'
+            else:
+                label = 'inactive'
+            keyboard[k] = make_key(page, label)
+            page += 1
+        return keyboard
+
+    def prepare_mid_keyboard() -> 'list[InlineKeyboardButton]':
+        keyboard = initialize_keyboard()
+        keyboard[0] = make_key(0, 'fback')
+        keyboard[1] = make_key(active_page - 1, 'back')
+        keyboard[2] = make_key(active_page, 'active')
+        keyboard[3] = make_key(active_page + 1, 'fwd')
+        keyboard[4] = make_key(last_page, 'ffwd')
+        return keyboard
+
+    def prepare_paging_keyboard() -> 'list[InlineKeyboardButton]':
+        if total_pages <= 5:
+            keyboard = prepare_simple_keyboard()
+        else:
+            if active_page <= 2:
+                keyboard = prepare_left_keyboard()
+            elif active_page >= total_pages - 2:
+                keyboard = prepare_right_keyboard()
+            else:
+                keyboard = prepare_mid_keyboard()
+        return keyboard
+
+    def prepare_keyboard() -> 'list[list[InlineKeyboardButton]]':
+        keyboard = []
+        if keys_above:
+            keyboard.append(keys_above)
+        keyboard.append(prepare_paging_keyboard())
+        if keys_below:
+            keyboard.append(keys_below)
+        return keyboard
+
+    return InlineKeyboardMarkup(prepare_keyboard())
+
+
+# todo : delete
 class PagingKeyboard:
     def __init__(self,
                  num_pages: int = 1,
