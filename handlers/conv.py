@@ -3,7 +3,7 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
 from middleware.event_list import EventList
-from keyboards import PagingKeyboard
+from keyboards import PagingKeyboard, make_paging_keyboard
 
 
 
@@ -19,9 +19,10 @@ CHOOSE_ACTION = chr(1)
 GATHER_SELF_INFO, GATHER_TARGET_ATHL_INFO = map(chr, range(2, 4))
 IN_SEARCH_FOR_TEAM, IN_SEARCH_FOR_ATHLETE = map(chr, range(4, 6))
 SWIMMER, BIKER, RUNNER = ('swimmer', 'biker', 'runner')
-GOT_SELF_ROLE = map(chr, range(20, 21))
-EVENT_SELECTION = map(chr, range(30, 31))
-VIEW_OPTIONS = map(chr, range(40, 41))
+
+VIEW_SEARCH_OPTIONS, EVENT_SELECTION = map(chr, range(20, 22))
+
+VIEW_EVENTS = map(chr, range(40, 41))
 
 
 # State definitions nested conversations
@@ -33,8 +34,9 @@ BACK, STOPPING = map(chr, range(98, 100))
 # Other Constants
 START_OVER = map(chr, range(100, 101))
 
-# Shortcut for ConversationHandler.END
+# Shortcuts
 END = ConversationHandler.END
+BACK_KEY = InlineKeyboardButton(text='Назад', callback_data=str(END))
 
 translation_dict = {
     'swimmer': 'пловец 🏊',
@@ -77,10 +79,10 @@ def start(update: Update, context: CallbackContext):
     return CHOOSE_ACTION
 
 
-def self_role(update: Update, context: CallbackContext):
+def set_athlete_role(update: Update, context: CallbackContext):
 
     logger.info("User %s is searching for a team in %s",
-                update.callback_query.from_user.first_name, "self_role")
+                update.callback_query.from_user.first_name, "set_athlete_role")
     logger.info('userdata %s', context.user_data)
 
     context.user_data['goal'] = IN_SEARCH_FOR_TEAM
@@ -94,18 +96,38 @@ def self_role(update: Update, context: CallbackContext):
             InlineKeyboardButton(text='Я велосипедист', callback_data=str(BIKER)),
             InlineKeyboardButton(text='Я бегун', callback_data=str(RUNNER)),
         ],
-        [
-            InlineKeyboardButton(text='Назад', callback_data=str(END)),
-        ]
+        [BACK_KEY]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
     update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
 
     context.user_data['level'] = GATHER_SELF_INFO
-    print('state=GOT_SELF_ROLE')
-    return GOT_SELF_ROLE
+    print('state=EVENT_SELECTION')
+    return EVENT_SELECTION
 
 
+def view_search_options(update: Update, context: CallbackContext):
+    logger.info("User %s is selecting search option",
+                update.callback_query.from_user.first_name)
+    logger.info('userdata %s', context.user_data)
+
+    role = update.callback_query.data
+    text = (
+        f'Можем выбрать гонку для участия.\n'
+        f'Или посмотреть все заявки на поиск {role}. '
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(text='Выбрать гонку', callback_data=str(EVENT_SELECTION)),
+            InlineKeyboardButton(text='Посмотреть все заявки', callback_data=str(VIEW_REQUESTS)),
+        ],
+        [BACK_KEY]
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+    context.user_data['level'] = GATHER_SELF_INFO
+    print('state=IN_SEARCH_FOR_TEAM')
+    return IN_SEARCH_FOR_TEAM
 
 # todo : remove - not needed
 def paging_event(update: Update, context: CallbackContext, event_list: EventList):
@@ -147,15 +169,15 @@ def select_event(update: Update, context: CallbackContext, event_list: EventList
     pages = event_list.filtered_page_print(5, print_method='get_text_with_selector')
     page = pages[0]
     total_pages = len(pages)
-    keyboard = PagingKeyboard(total_pages, keys_below=[InlineKeyboardButton(text='Back', callback_data=str(END))])
-    markup = keyboard.make_keyboard_markup(0)
+    active_page = 0
+    keyboard = make_paging_keyboard(total_pages=total_pages, active_page=active_page, keys_below=[BACK_KEY])
     update.callback_query.edit_message_text(text=static_text + page,
-                                            reply_markup=markup,
+                                            reply_markup=keyboard,
                                             disable_web_page_preview=True)
     context.user_data['last_paging_query'] = ''
     context.user_data['level'] = EVENT_SELECTION
-    print('state = VIEW_OPTIONS ')
-    return VIEW_OPTIONS
+    print('state = VIEW_EVENTS ')
+    return VIEW_EVENTS
 
 
 def paging_callback(update: Update, context: CallbackContext, event_list: EventList):
@@ -166,13 +188,12 @@ def paging_callback(update: Update, context: CallbackContext, event_list: EventL
         pages = event_list.filtered_page_print(5, print_method='get_text_with_selector')
         total_pages = len(pages)
         page = pages[page_number]
-        keyboard = PagingKeyboard(total_pages)
-        markup = keyboard.make_keyboard_markup(page_number)
-        query.edit_message_text(text=page, reply_markup=markup)
+        keyboard = make_paging_keyboard(total_pages=total_pages, active_page=page_number, keys_below=[BACK_KEY])
+        query.edit_message_text(text=page, reply_markup=keyboard)
     else:
         query.answer()
     context.user_data['last_paging_query'] = query.data
-    return VIEW_OPTIONS
+    return VIEW_EVENTS
 
 
 def in_search_for_athlete(update: Update, context: CallbackContext):
@@ -193,21 +214,31 @@ def go_back(update: Update, context: CallbackContext):
         print('state=END')
         return END
     elif level == EVENT_SELECTION:
-        self_role(update, context)
+        set_athlete_role(update, context)
         print('state=IN_SEARCH_FOR_TEAM')
-        return GOT_SELF_ROLE
+        return EVENT_SELECTION
 
 
 def stop(update: Update, context: CallbackContext):
     """End Conversation by command."""
-    update.message.reply_text('До встречи!')
+    text = (
+        'До встречи!'
+        '\n'
+        'Чтобы начать заново - нажми /start'
+    )
+    update.message.reply_text(text)
     print('state = END')
     return END
 
 
 def stop_nested(update: Update, context: CallbackContext) -> None:
     """Completely end conversation from within nested conversation."""
-    update.message.reply_text('Okay, bye.')
+    text = (
+        'До встречи!'
+        '\n'
+        'Чтобы начать заново - нажми /start'
+    )
+    update.message.reply_text(text)
     print('state = STOPPING')
     return STOPPING
 

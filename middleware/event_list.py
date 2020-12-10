@@ -173,9 +173,11 @@ class EventList:
         return self.filters
 
     def update_filters(self, filter_: dict) -> None:
-        for k, v in filter_.items():
-            # assert k in TriathlonEvent.__dict__.keys() - todo doesn't work - need another solution
-            self.filters[k] = v
+        # todo - reconsider
+        # for k, v in filter_.items():
+        #     # assert k in TriathlonEvent.__dict__.keys() - todo doesn't work - need another solution
+        #     self.filters[k] = v
+        self.filters = filter_
 
     def apply_filters(self) -> 'list[TriathlonEvent]':
         """
