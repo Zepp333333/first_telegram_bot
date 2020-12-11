@@ -22,24 +22,30 @@ def main():
 
     # instantiating and populating the EventList
     event_list = data_wrapper.get_event_list()
-    event_list.update_filters({})
+
+
+
+
+
+
+
 
     find_team_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(set_athlete_role, pattern='^' + str(IN_SEARCH_FOR_TEAM) + '$')],
         states={
-            VIEW_SEARCH_OPTIONS: [CallbackQueryHandler(view_search_options, pattern=
-                                                   '^'
-                                                   + str(SWIMMER) + '$|^'
-                                                   + str(BIKER) + '$|^'
-                                                   + str(RUNNER) + '$')],
-            VIEW_EVENTS: [CallbackQueryHandler(lambda update, context: paging_callback(update, context, event_list),
-                                               pattern='^#\d*$')],
-            EVENT_SELECTION: [CallbackQueryHandler(lambda update, context: select_event(update, context, event_list),
-                                                   pattern=
-                                                   '^'
-                                                   + str(SWIMMER) + '$|^'
-                                                   + str(BIKER) + '$|^'
-                                                   + str(RUNNER) + '$')],
+            SELECT_SEARCH_OPTION: [CallbackQueryHandler(select_view_races_or_requests,
+                                                        pattern='^'
+                                                                + str(SWIMMER) + '$|^'
+                                                                + str(BIKER) + '$|^'
+                                                                + str(RUNNER) + '$')],
+            VIEW_EVENTS: [CallbackQueryHandler(
+                lambda update, context: paging_callback(update, context, event_list),
+                pattern='^#\d*$')
+            ],
+            OPTION_SELECTED: [CallbackQueryHandler(
+                lambda update, context: select_event(update, context, event_list),
+                pattern='^' + str(EVENT_SELECTION) + '$')
+            ]
         },
         fallbacks=[
             CallbackQueryHandler(go_back, pattern='^' + str(END) + '$'),

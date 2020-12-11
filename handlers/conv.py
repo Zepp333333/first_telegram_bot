@@ -20,9 +20,11 @@ GATHER_SELF_INFO, GATHER_TARGET_ATHL_INFO = map(chr, range(2, 4))
 IN_SEARCH_FOR_TEAM, IN_SEARCH_FOR_ATHLETE = map(chr, range(4, 6))
 SWIMMER, BIKER, RUNNER = ('swimmer', 'biker', 'runner')
 
-VIEW_SEARCH_OPTIONS, EVENT_SELECTION = map(chr, range(20, 22))
+SELECT_SEARCH_OPTION, EVENT_SELECTION = map(chr, range(20, 22))
 
-VIEW_EVENTS = map(chr, range(40, 41))
+OPTION_SELECTED = map(chr, range(30, 31))
+
+VIEW_EVENTS, VIEW_REQUESTS = map(chr, range(40, 42))
 
 
 # State definitions nested conversations
@@ -103,14 +105,16 @@ def set_athlete_role(update: Update, context: CallbackContext):
 
     context.user_data['level'] = GATHER_SELF_INFO
     print('state=EVENT_SELECTION')
-    return EVENT_SELECTION
+    return SELECT_SEARCH_OPTION
+    # return EVENT_SELECTION
 
 
-def view_search_options(update: Update, context: CallbackContext):
+def select_view_races_or_requests(update: Update, context: CallbackContext):
     logger.info("User %s is selecting search option",
                 update.callback_query.from_user.first_name)
     logger.info('userdata %s', context.user_data)
 
+    context.user_data['role'] = update.callback_query.data
     role = update.callback_query.data
     text = (
         f'Можем выбрать гонку для участия.\n'
@@ -127,7 +131,7 @@ def view_search_options(update: Update, context: CallbackContext):
     update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
     context.user_data['level'] = GATHER_SELF_INFO
     print('state=IN_SEARCH_FOR_TEAM')
-    return IN_SEARCH_FOR_TEAM
+    return OPTION_SELECTED
 
 # todo : remove - not needed
 def paging_event(update: Update, context: CallbackContext, event_list: EventList):
@@ -157,7 +161,7 @@ def select_event(update: Update, context: CallbackContext, event_list: EventList
                 update.callback_query.from_user.first_name, 'select_event')
     logger.info('userdata %s', context.user_data)
 
-    context.user_data['role'] = update.callback_query.data
+    # context.user_data['role'] = update.callback_query.data
     static_text = (
         'Ок, ищем команду. '
         'Ты ' + translation_dict[(context.user_data['role'])] + '\n'
